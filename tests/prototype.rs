@@ -28,28 +28,40 @@ fn test_simple_generation() {
         PlaceName::new(vec![("佐", "sa"), ("渡", "do")]),
         // 高崎
         PlaceName::new(vec![("高", "taka"), ("崎", "saki")]),
+        // 伊勢崎
+        PlaceName::new(vec![("伊", "i"), ("勢", "se"), ("崎", "saki")]),
         // 日立
         PlaceName::new(vec![("日", "hi"), ("立", "tachi")]),
         // 水戸
         PlaceName::new(vec![("水", "mi"), ("戸", "to")]),
         // 成田
         PlaceName::new(vec![("成", "nari"), ("田", "ta")]),
+        // 船橋
+        PlaceName::new(vec![("船", "funa"), ("橋", "bashi")]),
         // 佐倉
         PlaceName::new(vec![("佐", "sa"), ("倉", "kura")]),
         // 市原
         PlaceName::new(vec![("市", "ichi"), ("原", "hara")]),
         // 立川
         PlaceName::new(vec![("立", "tachi"), ("川", "kawa")]),
+        // 八王子
+        PlaceName::new(vec![("八", "hachi"), ("王", "o"), ("子", "ji")]),
         // 所沢
         PlaceName::new(vec![("所", "tokoro"), ("沢", "zawa")]),
         // 飯田
         PlaceName::new(vec![("飯", "ii"), ("田", "da")]),
+        // 上田
+        PlaceName::new(vec![("上", "jo"), ("田", "da")]),
+        // 小諸
+        PlaceName::new(vec![("小", "ko"), ("諸", "moro")]),
         // 長野
         PlaceName::new(vec![("長", "naga"), ("野", "no")]),
         // 松本
         PlaceName::new(vec![("松", "matsu"), ("本", "moto")]),
         // 豊橋
         PlaceName::new(vec![("豊", "toyo"), ("橋", "hashi")]),
+        // 名古屋
+        PlaceName::new(vec![("名", "na"), ("古", "go"), ("屋", "ya")]),
         // 岡崎
         PlaceName::new(vec![("岡", "oka"), ("崎", "zaki")]),
         // 豊田
@@ -78,10 +90,18 @@ fn test_simple_generation() {
         PlaceName::new(vec![("亀", "kame"), ("岡", "oka")]),
         // 豊岡
         PlaceName::new(vec![("豊", "toyo"), ("岡", "oka")]),
+        // 神戸
+        PlaceName::new(vec![("神", "ko"), ("戸", "be")]),
+        // 姫路
+        PlaceName::new(vec![("姫", "hime"), ("路", "ji")]),
+        // 洲本
+        PlaceName::new(vec![("洲", "su"), ("本", "moto")]),
         // 三田
         PlaceName::new(vec![("三", "san"), ("田", "da")]),
         // 松原
         PlaceName::new(vec![("松", "matsu"), ("原", "bara")]),
+        // 岸和田
+        PlaceName::new(vec![("岸", "kishi"), ("和", "wa"), ("田", "ta")]),
         // 有田
         PlaceName::new(vec![("有", "ari"), ("田", "ta")]),
         // 徳島
@@ -126,6 +146,10 @@ fn test_simple_generation() {
         PlaceName::new(vec![("島", "shima"), ("原", "bara")]),
         // 中津
         PlaceName::new(vec![("中", "naka"), ("津", "tsu")]),
+        // 久留米
+        PlaceName::new(vec![("久", "ku"), ("留", "ru"), ("米", "me")]),
+        // 大牟田
+        PlaceName::new(vec![("大", "o"), ("牟", "mu"), ("田", "ta")]),
         // 玉名
         PlaceName::new(vec![("玉", "tama"), ("名", "na")]),
         // 人吉
@@ -134,6 +158,10 @@ fn test_simple_generation() {
         PlaceName::new(vec![("霧", "kiri"), ("島", "shima")]),
         // 日置
         PlaceName::new(vec![("日", "hi"), ("置", "oki")]),
+        // 鹿児島
+        PlaceName::new(vec![("鹿", "ka"), ("児", "go"), ("島", "shima")]),
+        // 宮崎
+        PlaceName::new(vec![("宮", "miya"), ("崎", "zaki")]),
     ];
 
     let generator = PlaceNameGeneratorBuilder::new()
