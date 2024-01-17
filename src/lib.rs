@@ -185,7 +185,7 @@ pub struct PlaceNameGenerator {
 
 impl PlaceNameGenerator {
     pub fn generate(&self, mut pfunc: impl FnMut() -> usize) -> (Kanji, Romaji) {
-        let append = |incoming_phrase: (Kanji, Romaji), p0: usize, p1: usize| {
+        let query_next = |incoming_phrase: (Kanji, Romaji), p0: usize, p1: usize| {
             let connection_phrase = self.graph.extract_forward(
                 Ascii::from_char(incoming_phrase.1.chars().last().unwrap()),
                 p0,
@@ -195,21 +195,45 @@ impl PlaceNameGenerator {
             let outgoing_phrase_code = p1 % outgoing_phrase_list.1.len();
             let outgoing_phrase =
                 self.outgoing_phrases[outgoing_phrase_list.1[outgoing_phrase_code]].clone();
-            (
-                incoming_phrase.0 + &outgoing_phrase.0,
-                incoming_phrase.1 + &outgoing_phrase.1,
-                outgoing_phrase.2,
-            )
+            (outgoing_phrase.0, outgoing_phrase.1, outgoing_phrase.2)
         };
 
         let incoming_phrase_code = pfunc() % self.incoming_phrases.len();
         let incoming_phrase = self.incoming_phrases[incoming_phrase_code].clone();
+        let mut phrases_vec = vec![(incoming_phrase.0, incoming_phrase.1)];
 
-        let mut incoming_phrase = append(incoming_phrase, pfunc(), pfunc());
-        while incoming_phrase.2 {
-            incoming_phrase = append((incoming_phrase.0, incoming_phrase.1), pfunc(), pfunc());
+        let mut restore_flag = true;
+        while restore_flag {
+            let (k, r, to_restore) =
+                query_next(phrases_vec[phrases_vec.len() - 1].clone(), pfunc(), pfunc());
+            phrases_vec.push((k, r));
+            restore_flag = to_restore;
         }
 
-        (incoming_phrase.0, incoming_phrase.1)
+        let phrases_vec = phrases_vec
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| {
+                if *i == 0 {
+                    return true;
+                }
+                phrases_vec[*i - 1].0 != phrases_vec[*i].0
+                    || phrases_vec[*i - 1].1 != phrases_vec[*i].1
+            })
+            .map(|(_, p)| p.clone())
+            .collect::<Vec<(Kanji, Romaji)>>();
+
+        let kanji = phrases_vec
+            .iter()
+            .map(|p| p.0.clone())
+            .collect::<Vec<Kanji>>()
+            .join("");
+        let romaji = phrases_vec
+            .iter()
+            .map(|p| p.1.clone())
+            .collect::<Vec<Romaji>>()
+            .join("");
+
+        (kanji, romaji)
     }
 }
