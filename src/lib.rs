@@ -210,6 +210,7 @@ impl PlaceNameGenerator {
             restore_flag = to_restore;
         }
 
+        // 圧縮
         let phrases_vec = phrases_vec
             .iter()
             .enumerate()
@@ -218,7 +219,8 @@ impl PlaceNameGenerator {
                     return true;
                 }
                 phrases_vec[*i - 1].0 != phrases_vec[*i].0
-                    || phrases_vec[*i - 1].1 != phrases_vec[*i].1
+                    || phrases_vec[*i - 1].1.chars().last().unwrap()
+                        != phrases_vec[*i].1.chars().last().unwrap()
             })
             .map(|(_, p)| p.clone())
             .collect::<Vec<(Kanji, Romaji)>>();
