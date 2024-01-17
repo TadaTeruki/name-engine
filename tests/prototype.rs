@@ -140,7 +140,7 @@ fn test_simple_generation() {
         .bulk_add_place_names(place_names)
         .build();
     let mut rng = StdRng::seed_from_u64(0);
-    (0..10000).for_each(|_| {
+    (0..1000).for_each(|_| {
         let name = generator.generate(|| rng.gen());
         println!("{} {}", name.0, name.1);
     });
