@@ -1,90 +1,82 @@
-type Kanji = String;
-type Romaji = String;
+use std::collections::HashMap;
+
+use rand::Rng;
+
+type Notation = String;
+type Pronunciation = String;
 type ToRestore = bool;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Ascii {
-    code: u8,
-}
-
-#[allow(dead_code)]
-impl Ascii {
-    pub fn from_code(code: u8) -> Ascii {
-        Ascii { code }
-    }
-
-    pub fn from_char(c: char) -> Ascii {
-        Ascii {
-            code: (c as u8) - 97,
-        }
-    }
-
-    pub fn to_char(self) -> char {
-        (self.code + 97) as char
-    }
-
-    pub fn to_code(self) -> u8 {
-        self.code
-    }
+struct Phonics {
+    character: char,
+    prop: f64,
 }
 
 struct PhonicsGraphBuilder {
-    // [([outgoing_ascii, count], count_sum)]
-    graph: Vec<(Vec<(Ascii, usize)>, usize)>,
+    graph: HashMap<char, HashMap<char, usize>>,
 }
 
 impl PhonicsGraphBuilder {
     fn new() -> PhonicsGraphBuilder {
         PhonicsGraphBuilder {
-            graph: vec![(vec![], 0); 26],
+            graph: HashMap::new(),
         }
     }
 
-    fn add_ascii_pair(&mut self, incoming_ascii: Ascii, outgoing_ascii: Ascii) {
-        let incoming_code = incoming_ascii.to_code() as usize;
-        let mut found = false;
-        for i in 0..self.graph[incoming_code].0.len() {
-            if self.graph[incoming_code].0[i].0 == outgoing_ascii {
-                self.graph[incoming_code].0[i].1 += 1;
-                found = true;
-                break;
-            }
-        }
-        if !found {
-            self.graph[incoming_code].0.push((outgoing_ascii, 1));
-        }
-        self.graph[incoming_code].1 += 1;
+    fn add_char_pair(&mut self, incoming_char: char, outgoing_char: char) {
+        self.graph
+            .entry(incoming_char)
+            .or_default()
+            .entry(outgoing_char)
+            .and_modify(|e| *e += 1)
+            .or_insert(1);
     }
 
     fn build(self) -> PhonicsGraph {
-        PhonicsGraph { graph: self.graph }
+        let graph = self
+            .graph
+            .iter()
+            .map(|(k, v)| {
+                let mut sum = 0;
+                for v2 in v.values() {
+                    sum += v2;
+                }
+
+                let mut set = vec![];
+                let mut prop = 0.0;
+
+                for (k2, v2) in v {
+                    prop += *v2 as f64 / sum as f64;
+                    set.push(Phonics {
+                        character: *k2,
+                        prop,
+                    });
+                }
+                (*k, set)
+            })
+            .collect::<HashMap<char, Vec<Phonics>>>();
+
+        PhonicsGraph { graph }
     }
 }
 
 struct PhonicsGraph {
-    // [([outgoing_ascii, count], count_sum)]
-    graph: Vec<(Vec<(Ascii, usize)>, usize)>,
+    graph: HashMap<char, Vec<Phonics>>,
 }
 
 impl PhonicsGraph {
-    fn extract_forward(&self, ascii: Ascii, index: usize) -> Ascii {
-        let code = ascii.to_code() as usize;
-        let outgoing_items = &self.graph[code].0;
-        let outgoing_sum = self.graph[code].1;
-        let to_extract = index % outgoing_sum;
-        let mut sum = 0;
-        for item in outgoing_items {
-            sum += item.1;
-            if sum >= to_extract {
-                return item.0;
-            }
-        }
-        outgoing_items[outgoing_items.len() - 1].0
+    fn extract_forward(&self, character: char, prop: f64) -> char {
+        self.graph
+            .get(&character)
+            .unwrap()
+            .iter()
+            .find(|p| p.prop >= prop)
+            .unwrap()
+            .character
     }
 }
 
 pub struct PlaceName {
-    pub phrases: Vec<(Kanji, Romaji)>,
+    pub phrases: Vec<(Notation, Pronunciation)>,
 }
 
 impl PlaceName {
@@ -127,9 +119,7 @@ impl PlaceNameGeneratorBuilder {
 
     pub fn build(self) -> PlaceNameGenerator {
         let mut graph_builder = PhonicsGraphBuilder::new();
-        let mut outgoing_tree = (0..26)
-            .map(|i| (Ascii::from_code(i), vec![]))
-            .collect::<Vec<(Ascii, Vec<usize>)>>();
+        let mut outgoing_tree = HashMap::new();
         let mut incoming_phrases = vec![];
         let mut outgoing_phrases = vec![];
         self.place_names.iter().for_each(|place_name| {
@@ -143,11 +133,7 @@ impl PlaceNameGeneratorBuilder {
                 }
                 let (incoming_char, outgoing_char) =
                     (incoming_char.unwrap(), outgoing_char.unwrap());
-                let (incoming_ascii, outgoing_ascii) = (
-                    Ascii::from_char(incoming_char),
-                    Ascii::from_char(outgoing_char),
-                );
-                graph_builder.add_ascii_pair(incoming_ascii, outgoing_ascii);
+                graph_builder.add_char_pair(incoming_char, outgoing_char);
                 if i == 0 {
                     incoming_phrases.push(place_name.phrases[i].clone());
                 }
@@ -157,9 +143,10 @@ impl PlaceNameGeneratorBuilder {
                     place_name.phrases[i + 1].1.clone(),
                     to_restore,
                 ));
-                outgoing_tree[outgoing_ascii.to_code() as usize]
-                    .1
-                    .push(outgoing_phrases.len() - 1);
+                outgoing_tree
+                    .entry(outgoing_char)
+                    .and_modify(|v: &mut Vec<usize>| v.push(outgoing_phrases.len() - 1))
+                    .or_insert(vec![outgoing_phrases.len() - 1]);
             }
         });
 
@@ -174,38 +161,46 @@ impl PlaceNameGeneratorBuilder {
 
 pub struct PlaceNameGenerator {
     // PlaceNameのincomingを格納する木構造
-    incoming_phrases: Vec<(Kanji, Romaji)>,
+    incoming_phrases: Vec<(Notation, Pronunciation)>,
     // PlaceNameのoutgoingを格納する木構造
-    outgoing_phrases: Vec<(Kanji, Romaji, ToRestore)>,
+    outgoing_phrases: Vec<(Notation, Pronunciation, ToRestore)>,
     // 各Phonicsから始まるoutgoing phraseのindexを格納する木構造
-    outgoing_tree: Vec<(Ascii, Vec<usize>)>,
+    outgoing_tree: HashMap<char, Vec<usize>>,
     // Phonics同士の接続を表すグラフ
     graph: PhonicsGraph,
 }
 
 impl PlaceNameGenerator {
-    pub fn generate(&self, mut pfunc: impl FnMut() -> usize) -> (Kanji, Romaji) {
-        let query_next = |incoming_phrase: (Kanji, Romaji), p0: usize, p1: usize| {
-            let connection_phrase = self.graph.extract_forward(
-                Ascii::from_char(incoming_phrase.1.chars().last().unwrap()),
-                p0,
-            );
+    pub fn generate<R>(&self, mut rng: R) -> (Notation, Pronunciation)
+    where
+        R: Rng,
+    {
+        let query_next = |incoming_phrase: (Notation, Pronunciation), p0: f64, p1: f64| {
+            let connection_phrase = self
+                .graph
+                .extract_forward(incoming_phrase.1.chars().last().unwrap(), p0);
 
-            let outgoing_phrase_list = &self.outgoing_tree[connection_phrase.to_code() as usize];
-            let outgoing_phrase_code = p1 % outgoing_phrase_list.1.len();
-            let outgoing_phrase =
-                self.outgoing_phrases[outgoing_phrase_list.1[outgoing_phrase_code]].clone();
-            (outgoing_phrase.0, outgoing_phrase.1, outgoing_phrase.2)
+            let outgoing_phrase_list = &self.outgoing_tree.get(&connection_phrase).unwrap();
+            let outgoing_phrase = &self.outgoing_phrases
+                [outgoing_phrase_list[(p1 * outgoing_phrase_list.len() as f64) as usize]];
+            (
+                outgoing_phrase.0.clone(),
+                outgoing_phrase.1.clone(),
+                outgoing_phrase.2,
+            )
         };
 
-        let incoming_phrase_code = pfunc() % self.incoming_phrases.len();
-        let incoming_phrase = self.incoming_phrases[incoming_phrase_code].clone();
-        let mut phrases_vec = vec![(incoming_phrase.0, incoming_phrase.1)];
+        let incoming_phrase = &self.incoming_phrases
+            [(rng.gen::<f64>() * self.incoming_phrases.len() as f64) as usize];
+        let mut phrases_vec = vec![(incoming_phrase.0.clone(), incoming_phrase.1.clone())];
 
         let mut restore_flag = true;
         while restore_flag {
-            let (k, r, to_restore) =
-                query_next(phrases_vec[phrases_vec.len() - 1].clone(), pfunc(), pfunc());
+            let (k, r, to_restore) = query_next(
+                phrases_vec[phrases_vec.len() - 1].clone(),
+                rng.gen(),
+                rng.gen(),
+            );
             phrases_vec.push((k, r));
             restore_flag = to_restore;
         }
@@ -223,19 +218,19 @@ impl PlaceNameGenerator {
                         != phrases_vec[*i].1.chars().last().unwrap()
             })
             .map(|(_, p)| p.clone())
-            .collect::<Vec<(Kanji, Romaji)>>();
+            .collect::<Vec<(Notation, Pronunciation)>>();
 
-        let kanji = phrases_vec
+        let notation = phrases_vec
             .iter()
             .map(|p| p.0.clone())
-            .collect::<Vec<Kanji>>()
+            .collect::<Vec<Notation>>()
             .join("");
-        let romaji = phrases_vec
+        let pronunciation = phrases_vec
             .iter()
             .map(|p| p.1.clone())
-            .collect::<Vec<Romaji>>()
+            .collect::<Vec<Pronunciation>>()
             .join("");
 
-        (kanji, romaji)
+        (notation, pronunciation)
     }
 }

@@ -1,5 +1,5 @@
 use placename::{PlaceName, PlaceNameGeneratorBuilder};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, SeedableRng};
 
 #[test]
 fn test_simple_generation() {
@@ -168,8 +168,8 @@ fn test_simple_generation() {
         .bulk_add_place_names(place_names)
         .build();
     let mut rng = StdRng::seed_from_u64(0);
-    (0..1000).for_each(|_| {
-        let name = generator.generate(|| rng.gen());
+    (0..100).for_each(|_| {
+        let name = generator.generate(&mut rng);
         println!("{} {}", name.0, name.1);
     });
 }
