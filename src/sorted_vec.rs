@@ -2,7 +2,7 @@ pub struct SortedVecBuilder<C, V>
 where
     C: PartialOrd,
 {
-    vec: Vec<(C, V)>,
+    elements: Vec<(C, V)>,
 }
 
 impl<C, V> SortedVecBuilder<C, V>
@@ -10,17 +10,17 @@ where
     C: PartialOrd,
 {
     pub fn new() -> Self {
-        Self { vec: vec![] }
+        Self { elements: vec![] }
     }
 
     pub fn push(&mut self, cmp: C, value: V) {
-        self.vec.push((cmp, value));
+        self.elements.push((cmp, value));
     }
 
     pub fn build(self) -> SortedVec<C, V> {
-        let mut vec = self.vec;
-        vec.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        SortedVec { vec }
+        let mut elements = self.elements;
+        elements.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        SortedVec { elements }
     }
 }
 
@@ -29,7 +29,7 @@ pub struct SortedVec<C, V>
 where
     C: PartialOrd,
 {
-    vec: Vec<(C, V)>,
+    elements: Vec<(C, V)>,
 }
 
 impl<C, V> SortedVec<C, V>
@@ -38,12 +38,12 @@ where
 {
     pub fn find(&self, cmp: C) -> &(C, V) {
         let mut left: i32 = -1;
-        let mut right: i32 = self.vec.len() as i32;
+        let mut right: i32 = self.elements.len() as i32;
 
         while right - left > 1 {
             let mid = left + (right - left) / 2;
             match self
-                .vec
+                .elements
                 .get(mid as usize)
                 .unwrap()
                 .0
@@ -56,6 +56,6 @@ where
             }
         }
 
-        &self.vec[right as usize]
+        &self.elements[right as usize]
     }
 }
