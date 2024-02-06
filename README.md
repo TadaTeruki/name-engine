@@ -17,4 +17,4 @@ Source: https://www.pref.hokkaido.lg.jp/link/shichoson/aiueo.html
 
 ## License
 
-Copyright (c) 2024, Teruki TADA
+This project is licensed under the Mozilla Public License v2.0. See the [LICENSE](LICENSE) file for details.
