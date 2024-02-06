@@ -1,4 +1,4 @@
-use placename::{PlaceName, PlaceNameGeneratorBuilder};
+use placename_engine::{PlaceName, PlaceNameGeneratorBuilder};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn main() {
