@@ -10,7 +10,8 @@ If you want to try it out, please refer to the example code in `examples/`.
 
 ## Data Source
 
-`examples/assets/hokkaido.csv`: Modified Hokkaido Government Opendata CC-BY4.0（https://creativecommons.org/licenses/by/4.0/deed.ja）
+`examples/assets/hokkaido.csv`: Hokkaido Government Opendata CC-BY4.0（https://creativecommons.org/licenses/by/4.0/deed.ja）
+Modified from the original data.
 
 Source: https://www.pref.hokkaido.lg.jp/link/shichoson/aiueo.html
 
