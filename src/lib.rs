@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 
-use rand::Rng;
+use sorted_vec::{SortedVec, SortedVecBuilder};
 
 type Notation = String;
 type Pronunciation = String;
 type ToRestore = bool;
 
-struct Phonics {
-    character: char,
-    prop: f64,
-}
+mod sorted_vec;
 
 struct PhonicsGraphBuilder {
     graph: HashMap<char, HashMap<char, usize>>,
@@ -32,49 +29,50 @@ impl PhonicsGraphBuilder {
     }
 
     fn build(self) -> PhonicsGraph {
-        let graph = self
-            .graph
-            .iter()
-            .map(|(k, v)| {
-                let mut sum = 0;
-                for v2 in v.values() {
-                    sum += v2;
-                }
+        let mut builder = SortedVecBuilder::new();
+        self.graph.iter().for_each(|(k, v)| {
+            let mut sum = 0;
+            for v2 in v.values() {
+                sum += v2;
+            }
 
-                let mut set = vec![];
-                let mut prop = 0.0;
+            let mut v = v.iter().collect::<Vec<(&char, &usize)>>();
+            v.sort_by(|a, b| a.0.cmp(b.0));
 
-                for (k2, v2) in v {
-                    prop += *v2 as f64 / sum as f64;
-                    set.push(Phonics {
-                        character: *k2,
-                        prop,
-                    });
-                }
-                (*k, set)
-            })
-            .collect::<HashMap<char, Vec<Phonics>>>();
+            let mut set = SortedVecBuilder::new();
+            let mut prop = 0.0;
 
-        PhonicsGraph { graph }
+            for (k2, v2) in v {
+                prop += *v2 as f64 / sum as f64;
+                set.push(prop, *k2);
+            }
+
+            let set = set.build();
+            builder.push(*k, set);
+        });
+
+        PhonicsGraph {
+            graph: builder.build(),
+        }
     }
 }
 
 struct PhonicsGraph {
-    graph: HashMap<char, Vec<Phonics>>,
+    graph: SortedVec<char, SortedVec<f64, char>>,
 }
 
 impl PhonicsGraph {
     fn extract_forward(&self, character: char, prop: f64) -> char {
-        self.graph
-            .get(&character)
-            .unwrap()
-            .iter()
-            .find(|p| p.prop >= prop)
-            .unwrap()
-            .character
+        let found = {
+            let set = &self.graph.find(character).1;
+            let found = set.find(prop);
+            found
+        };
+        found.1
     }
 }
 
+#[derive(Debug)]
 pub struct PlaceName {
     pub phrases: Vec<(Notation, Pronunciation)>,
 }
@@ -171,15 +169,11 @@ pub struct PlaceNameGenerator {
 }
 
 impl PlaceNameGenerator {
-    pub fn generate<R>(&self, mut rng: R) -> (Notation, Pronunciation)
-    where
-        R: Rng,
-    {
+    pub fn generate(&self, mut rand_fn: impl FnMut() -> f64) -> (Notation, Pronunciation) {
         let query_next = |incoming_phrase: (Notation, Pronunciation), p0: f64, p1: f64| {
             let connection_phrase = self
                 .graph
                 .extract_forward(incoming_phrase.1.chars().last().unwrap(), p0);
-
             let outgoing_phrase_list = &self.outgoing_tree.get(&connection_phrase).unwrap();
             let outgoing_phrase = &self.outgoing_phrases
                 [outgoing_phrase_list[(p1 * outgoing_phrase_list.len() as f64) as usize]];
@@ -190,16 +184,16 @@ impl PlaceNameGenerator {
             )
         };
 
-        let incoming_phrase = &self.incoming_phrases
-            [(rng.gen::<f64>() * self.incoming_phrases.len() as f64) as usize];
+        let incoming_phrase =
+            &self.incoming_phrases[(rand_fn() * self.incoming_phrases.len() as f64) as usize];
         let mut phrases_vec = vec![(incoming_phrase.0.clone(), incoming_phrase.1.clone())];
 
         let mut restore_flag = true;
         while restore_flag {
             let (k, r, to_restore) = query_next(
                 phrases_vec[phrases_vec.len() - 1].clone(),
-                rng.gen(),
-                rng.gen(),
+                rand_fn(),
+                rand_fn(),
             );
             phrases_vec.push((k, r));
             restore_flag = to_restore;

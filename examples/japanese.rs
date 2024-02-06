@@ -1,8 +1,7 @@
 use placename::{PlaceName, PlaceNameGeneratorBuilder};
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
-#[test]
-fn test_simple_generation() {
+fn main() {
     let place_names = vec![
         // 青森
         PlaceName::new(vec![("青", "ao"), ("森", "mori")]),
@@ -167,9 +166,9 @@ fn test_simple_generation() {
     let generator = PlaceNameGeneratorBuilder::new()
         .bulk_add_place_names(place_names)
         .build();
-    let mut rng = StdRng::seed_from_u64(0);
+    let mut rng: StdRng = SeedableRng::seed_from_u64(0);
     (0..100).for_each(|_| {
-        let name = generator.generate(&mut rng);
+        let name = generator.generate(|| rng.gen());
         println!("{} {}", name.0, name.1);
     });
 }
