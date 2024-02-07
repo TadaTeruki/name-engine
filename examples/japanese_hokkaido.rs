@@ -13,12 +13,13 @@ fn main() {
     let place_names = csv_file
         .lines()
         .map(|line| {
-            let first_quote = line.find('"').unwrap();
-            let last_quote = line.rfind('"').unwrap();
-            let phrases = line[first_quote + 1..last_quote]
-                .split(',')
+            let split = line.split(',');
+            let phrases = split
+                .last()
+                .unwrap()
+                .split(':')
                 .map(|phrase| {
-                    let mut split = phrase.split(':');
+                    let mut split = phrase.split('_');
                     (split.next().unwrap(), split.next().unwrap())
                 })
                 .collect::<Vec<(&str, &str)>>();
