@@ -13,7 +13,7 @@ fn format(name: String) -> String {
 }
 
 fn main() {
-    let csv_file = include_str!("assets/english.csv");
+    let csv_file = include_str!("assets/england.csv");
 
     let place_names = csv_file
         .lines()
@@ -36,7 +36,7 @@ fn main() {
         .bulk_add_place_names(place_names)
         .build();
     let mut rng: StdRng = SeedableRng::seed_from_u64(0);
-    (0..800).for_each(|_| {
+    (0..100).for_each(|_| {
         let name = generator.generate(|| rng.gen());
         println!("{} {}", format(name.0), format(name.1));
     });

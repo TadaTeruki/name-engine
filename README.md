@@ -15,6 +15,20 @@ Modified from the original data.
 
 Source: https://www.pref.hokkaido.lg.jp/link/shichoson/aiueo.html
 
+## Examples
+
+#### Generate 100 place names of Hokkaido
+
+```sh
+$ cargo run --example hokkaido
+```
+
+#### Generate 100 place names of England
+
+```sh
+$ cargo run --example england
+```
+
 ## License
 
 This project is licensed under the Mozilla Public License v2.0. See the [LICENSE](LICENSE) file for details.
