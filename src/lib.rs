@@ -119,6 +119,14 @@ impl PlaceName {
         }
         pairs
     }
+
+    pub fn last_char_of_syllable(&self, i: usize) -> char {
+        self.syllables[i].1.chars().last().unwrap()
+    }
+
+    pub fn first_char_of_syllable(&self, i: usize) -> char {
+        self.syllables[i].1.chars().next().unwrap()
+    }
 }
 
 pub struct PlaceNameGeneratorBuilder {
@@ -153,30 +161,30 @@ impl PlaceNameGeneratorBuilder {
         let mut outgoing_tree = HashMap::new();
         let mut incoming_syllables = vec![];
         let mut outgoing_syllables = vec![];
-        self.place_names.iter().for_each(|place_name| {
-            place_name
-                .connection_pairs()
-                .iter()
-                .enumerate()
-                .for_each(|(i, pair)| {
-                    conn_builder.add_char_pair(pair.0, pair.1);
-                    if i == 0 {
-                        incoming_syllables.push(place_name.syllables[i].clone());
-                    }
-                    let to_restore = i + 1 != place_name.syllables.len() - 1;
-                    outgoing_syllables.push((
-                        place_name.syllables[i + 1].0.clone(),
-                        place_name.syllables[i + 1].1.clone(),
-                        to_restore,
-                    ));
-                    outgoing_tree
-                        .entry(pair.1)
-                        .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
-                        .or_insert(vec![outgoing_syllables.len() - 1]);
-                });
-        });
+        self.place_names
+            .iter()
+            .enumerate()
+            .for_each(|(ipn, place_name)| {
+                place_name
+                    .connection_pairs()
+                    .iter()
+                    .enumerate()
+                    .for_each(|(ipc, pair)| {
+                        conn_builder.add_char_pair(pair.0, pair.1);
+                        if ipc == 0 {
+                            incoming_syllables.push((ipn, ipc));
+                        }
+                        let to_restore = ipc + 1 != place_name.syllables.len() - 1;
+                        outgoing_syllables.push((ipn, ipc + 1, to_restore));
+                        outgoing_tree
+                            .entry(pair.1)
+                            .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
+                            .or_insert(vec![outgoing_syllables.len() - 1]);
+                    });
+            });
 
         PlaceNameGenerator {
+            place_names: self.place_names,
             incoming_syllables,
             outgoing_syllables,
             outgoing_tree,
@@ -186,10 +194,11 @@ impl PlaceNameGeneratorBuilder {
 }
 
 pub struct PlaceNameGenerator {
+    place_names: Vec<PlaceName>,
     // syllables that can be the first syllable
-    incoming_syllables: Vec<(Content, Script)>,
+    incoming_syllables: Vec<(usize, usize)>,
     // syllables that can be the next syllable
-    outgoing_syllables: Vec<(Content, Script, ToRestore)>,
+    outgoing_syllables: Vec<(usize, usize, ToRestore)>,
     // list of the index of the outgoing_syllables which has the same first character
     outgoing_tree: HashMap<char, Vec<usize>>,
     // phonetic connection between the last character of the previous syllable and the first character of the next syllable
@@ -198,58 +207,35 @@ pub struct PlaceNameGenerator {
 
 impl PlaceNameGenerator {
     pub fn generate(&self, mut rand_fn: impl FnMut() -> f64) -> (Content, Script) {
-        let query_next = |incoming_syllable: (Content, Script), p0: f64, p1: f64| {
-            let connection_syllable = self
-                .conn
-                .extract_forward(incoming_syllable.1.chars().last().unwrap(), p0);
-            let outgoing_syllable_list = &self.outgoing_tree.get(&connection_syllable).unwrap();
-            let outgoing_syllable = &self.outgoing_syllables
-                [outgoing_syllable_list[(p1 * outgoing_syllable_list.len() as f64) as usize]];
-            (
-                outgoing_syllable.0.clone(),
-                outgoing_syllable.1.clone(),
-                outgoing_syllable.2,
-            )
+        let query_next = |incoming_syllable: (usize, usize), p0: f64, p1: f64| {
+            let connection_syllable = self.conn.extract_forward(
+                self.place_names[incoming_syllable.0].last_char_of_syllable(incoming_syllable.1),
+                p0,
+            );
+            let outgoing_syllable_list = &self.outgoing_tree[&connection_syllable];
+            &self.outgoing_syllables
+                [outgoing_syllable_list[(p1 * outgoing_syllable_list.len() as f64) as usize]]
         };
 
         let incoming_syllable =
             &self.incoming_syllables[(rand_fn() * self.incoming_syllables.len() as f64) as usize];
-        let mut syllables_vec = vec![(incoming_syllable.0.clone(), incoming_syllable.1.clone())];
+        let mut syllables_vec = vec![(incoming_syllable.0, incoming_syllable.1)];
 
         let mut restore_flag = true;
         while restore_flag {
-            let (k, r, to_restore) = query_next(
-                syllables_vec[syllables_vec.len() - 1].clone(),
-                rand_fn(),
-                rand_fn(),
-            );
-            syllables_vec.push((k, r));
-            restore_flag = to_restore;
+            let (k, r, to_restore) =
+                query_next(syllables_vec[syllables_vec.len() - 1], rand_fn(), rand_fn());
+            syllables_vec.push((*k, *r));
+            restore_flag = *to_restore;
         }
-
-        // If the last syllable is the same as the previous one, remove it
-        let syllables_vec = syllables_vec
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| {
-                if *i == 0 {
-                    return true;
-                }
-                syllables_vec[*i - 1].0 != syllables_vec[*i].0
-                    || syllables_vec[*i - 1].1.chars().last().unwrap()
-                        != syllables_vec[*i].1.chars().last().unwrap()
-            })
-            .map(|(_, p)| p.clone())
-            .collect::<Vec<(Content, Script)>>();
-
         let content = syllables_vec
             .iter()
-            .map(|p| p.0.clone())
+            .map(|p| self.place_names[p.0].syllables[p.1].0.clone())
             .collect::<Vec<Content>>()
             .join("");
         let script = syllables_vec
             .iter()
-            .map(|p| p.1.clone())
+            .map(|p| self.place_names[p.0].syllables[p.1].1.clone())
             .collect::<Vec<Script>>()
             .join("");
 
