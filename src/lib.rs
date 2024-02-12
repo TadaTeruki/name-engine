@@ -87,7 +87,7 @@ impl PhoneticConnection {
 
 #[derive(Debug)]
 pub struct PlaceName {
-    pub syllables: Vec<(Content, Script)>,
+    syllables: Vec<(Content, Script)>,
 }
 
 impl PlaceName {
@@ -109,7 +109,7 @@ impl PlaceName {
         Ok(Self { syllables })
     }
 
-    pub fn connection_pairs(&self) -> Vec<(char, char)> {
+    fn connection_pairs(&self) -> Vec<(char, char)> {
         let mut pairs = vec![];
         for i in 0..self.syllables.len() - 1 {
             pairs.push((
@@ -120,12 +120,20 @@ impl PlaceName {
         pairs
     }
 
-    pub fn last_char_of_syllable(&self, i: usize) -> char {
+    fn last_char_of_syllable(&self, i: usize) -> char {
         self.syllables[i].1.chars().last().unwrap()
     }
 
-    pub fn first_char_of_syllable(&self, i: usize) -> char {
-        self.syllables[i].1.chars().next().unwrap()
+    pub fn content(&self) -> Content {
+        self.syllables.iter().map(|p| p.0.clone()).collect()
+    }
+
+    pub fn script(&self) -> Script {
+        self.syllables.iter().map(|p| p.1.clone()).collect()
+    }
+
+    pub fn syllables(&self) -> &Vec<(Content, Script)> {
+        &self.syllables
     }
 }
 
@@ -263,5 +271,9 @@ impl PlaceNameGenerator {
     pub fn generate(&self, rand_fn: impl FnMut() -> f64) -> (Content, Script) {
         let (content, script, _) = self.generate_verbose(rand_fn);
         (content, script)
+    }
+
+    pub fn place_names(&self) -> &Vec<PlaceName> {
+        &self.place_names
     }
 }
