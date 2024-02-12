@@ -25,7 +25,9 @@ fn main() {
                 .split(':')
                 .map(|phrase| {
                     let mut split = phrase.split('_');
-                    (split.next().unwrap(), split.next().unwrap())
+                    let name = split.next().unwrap();
+                    let pronounciation = split.next().unwrap();
+                    (pronounciation, name)
                 })
                 .collect::<Vec<(&str, &str)>>();
             PlaceName::new(phrases)
@@ -38,6 +40,6 @@ fn main() {
     let mut rng: StdRng = SeedableRng::seed_from_u64(0);
     (0..100).for_each(|_| {
         let name = generator.generate(|| rng.gen());
-        println!("{} {}", format(name.0), format(name.1));
+        println!("{} {}", format(name.1), format(name.0));
     });
 }
