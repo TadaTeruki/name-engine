@@ -205,8 +205,17 @@ pub struct PlaceNameGenerator {
     conn: PhoneticConnection,
 }
 
+#[derive(Debug)]
+pub struct SyllableInfo {
+    pub place_name_index: usize,
+    pub syllable_index: usize,
+}
+
 impl PlaceNameGenerator {
-    pub fn generate(&self, mut rand_fn: impl FnMut() -> f64) -> (Content, Script) {
+    pub fn generate_verbose(
+        &self,
+        mut rand_fn: impl FnMut() -> f64,
+    ) -> (Content, Script, Vec<SyllableInfo>) {
         let query_next = |incoming_syllable: (usize, usize), p0: f64, p1: f64| {
             let connection_syllable = self.conn.extract_forward(
                 self.place_names[incoming_syllable.0].last_char_of_syllable(incoming_syllable.1),
@@ -228,6 +237,15 @@ impl PlaceNameGenerator {
             syllables_vec.push((*k, *r));
             restore_flag = *to_restore;
         }
+
+        let syllable_info = syllables_vec
+            .iter()
+            .map(|p| SyllableInfo {
+                place_name_index: p.0,
+                syllable_index: p.1,
+            })
+            .collect::<Vec<SyllableInfo>>();
+
         let content = syllables_vec
             .iter()
             .map(|p| self.place_names[p.0].syllables[p.1].0.clone())
@@ -239,6 +257,11 @@ impl PlaceNameGenerator {
             .collect::<Vec<Script>>()
             .join("");
 
+        (content, script, syllable_info)
+    }
+
+    pub fn generate(&self, rand_fn: impl FnMut() -> f64) -> (Content, Script) {
+        let (content, script, _) = self.generate_verbose(rand_fn);
         (content, script)
     }
 }
