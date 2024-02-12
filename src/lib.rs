@@ -80,13 +80,13 @@ impl PhoneticConnection {
 
 #[derive(Debug)]
 pub struct PlaceName {
-    pub blocks: Vec<(Notation, Pronunciation)>,
+    pub syllables: Vec<(Notation, Pronunciation)>,
 }
 
 impl PlaceName {
-    pub fn new(blocks: Vec<(&str, &str)>) -> Self {
+    pub fn new(syllables: Vec<(&str, &str)>) -> Self {
         Self {
-            blocks: blocks
+            syllables: syllables
                 .iter()
                 .map(|(k, r)| (k.to_string(), r.to_string()))
                 .collect(),
@@ -124,13 +124,13 @@ impl PlaceNameGeneratorBuilder {
     pub fn build(self) -> PlaceNameGenerator {
         let mut conn_builder = PhoneticConnectionBuilder::new();
         let mut outgoing_tree = HashMap::new();
-        let mut incoming_blocks = vec![];
-        let mut outgoing_blocks = vec![];
+        let mut incoming_syllables = vec![];
+        let mut outgoing_syllables = vec![];
         self.place_names.iter().for_each(|place_name| {
-            for i in 0..place_name.blocks.len() - 1 {
+            for i in 0..place_name.syllables.len() - 1 {
                 let (incoming_char, outgoing_char) = (
-                    place_name.blocks[i].1.chars().last(),
-                    place_name.blocks[i + 1].1.chars().next(),
+                    place_name.syllables[i].1.chars().last(),
+                    place_name.syllables[i + 1].1.chars().next(),
                 );
                 if incoming_char.is_none() || outgoing_char.is_none() {
                     continue;
@@ -139,24 +139,24 @@ impl PlaceNameGeneratorBuilder {
                     (incoming_char.unwrap(), outgoing_char.unwrap());
                 conn_builder.add_char_pair(incoming_char, outgoing_char);
                 if i == 0 {
-                    incoming_blocks.push(place_name.blocks[i].clone());
+                    incoming_syllables.push(place_name.syllables[i].clone());
                 }
-                let to_restore = i + 1 != place_name.blocks.len() - 1;
-                outgoing_blocks.push((
-                    place_name.blocks[i + 1].0.clone(),
-                    place_name.blocks[i + 1].1.clone(),
+                let to_restore = i + 1 != place_name.syllables.len() - 1;
+                outgoing_syllables.push((
+                    place_name.syllables[i + 1].0.clone(),
+                    place_name.syllables[i + 1].1.clone(),
                     to_restore,
                 ));
                 outgoing_tree
                     .entry(outgoing_char)
-                    .and_modify(|v: &mut Vec<usize>| v.push(outgoing_blocks.len() - 1))
-                    .or_insert(vec![outgoing_blocks.len() - 1]);
+                    .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
+                    .or_insert(vec![outgoing_syllables.len() - 1]);
             }
         });
 
         PlaceNameGenerator {
-            incoming_blocks,
-            outgoing_blocks,
+            incoming_syllables,
+            outgoing_syllables,
             outgoing_tree,
             conn: conn_builder.build(),
         }
@@ -164,68 +164,68 @@ impl PlaceNameGeneratorBuilder {
 }
 
 pub struct PlaceNameGenerator {
-    // blocks that can be the first block
-    incoming_blocks: Vec<(Notation, Pronunciation)>,
-    // blocks that can be the next block
-    outgoing_blocks: Vec<(Notation, Pronunciation, ToRestore)>,
-    // list of the index of the outgoing_blocks which has the same first character
+    // syllables that can be the first syllable
+    incoming_syllables: Vec<(Notation, Pronunciation)>,
+    // syllables that can be the next syllable
+    outgoing_syllables: Vec<(Notation, Pronunciation, ToRestore)>,
+    // list of the index of the outgoing_syllables which has the same first character
     outgoing_tree: HashMap<char, Vec<usize>>,
-    // phonetic connection between the last character of the previous block and the first character of the next block
+    // phonetic connection between the last character of the previous syllable and the first character of the next syllable
     conn: PhoneticConnection,
 }
 
 impl PlaceNameGenerator {
     pub fn generate(&self, mut rand_fn: impl FnMut() -> f64) -> (Notation, Pronunciation) {
-        let query_next = |incoming_block: (Notation, Pronunciation), p0: f64, p1: f64| {
-            let connection_block = self
+        let query_next = |incoming_syllable: (Notation, Pronunciation), p0: f64, p1: f64| {
+            let connection_syllable = self
                 .conn
-                .extract_forward(incoming_block.1.chars().last().unwrap(), p0);
-            let outgoing_block_list = &self.outgoing_tree.get(&connection_block).unwrap();
-            let outgoing_block = &self.outgoing_blocks
-                [outgoing_block_list[(p1 * outgoing_block_list.len() as f64) as usize]];
+                .extract_forward(incoming_syllable.1.chars().last().unwrap(), p0);
+            let outgoing_syllable_list = &self.outgoing_tree.get(&connection_syllable).unwrap();
+            let outgoing_syllable = &self.outgoing_syllables
+                [outgoing_syllable_list[(p1 * outgoing_syllable_list.len() as f64) as usize]];
             (
-                outgoing_block.0.clone(),
-                outgoing_block.1.clone(),
-                outgoing_block.2,
+                outgoing_syllable.0.clone(),
+                outgoing_syllable.1.clone(),
+                outgoing_syllable.2,
             )
         };
 
-        let incoming_block =
-            &self.incoming_blocks[(rand_fn() * self.incoming_blocks.len() as f64) as usize];
-        let mut blocks_vec = vec![(incoming_block.0.clone(), incoming_block.1.clone())];
+        let incoming_syllable =
+            &self.incoming_syllables[(rand_fn() * self.incoming_syllables.len() as f64) as usize];
+        let mut syllables_vec = vec![(incoming_syllable.0.clone(), incoming_syllable.1.clone())];
 
         let mut restore_flag = true;
         while restore_flag {
             let (k, r, to_restore) = query_next(
-                blocks_vec[blocks_vec.len() - 1].clone(),
+                syllables_vec[syllables_vec.len() - 1].clone(),
                 rand_fn(),
                 rand_fn(),
             );
-            blocks_vec.push((k, r));
+            syllables_vec.push((k, r));
             restore_flag = to_restore;
         }
 
-        // If the last block is the same as the previous one, remove it
-        let blocks_vec = blocks_vec
+        // If the last syllable is the same as the previous one, remove it
+        let syllables_vec = syllables_vec
             .iter()
             .enumerate()
             .filter(|(i, _)| {
                 if *i == 0 {
                     return true;
                 }
-                blocks_vec[*i - 1].0 != blocks_vec[*i].0
-                    || blocks_vec[*i - 1].1.chars().last().unwrap()
-                        != blocks_vec[*i].1.chars().last().unwrap()
+                syllables_vec[*i - 1].0 != syllables_vec[*i].0
+                    || syllables_vec[*i - 1].1.chars().last().unwrap()
+                        != syllables_vec[*i].1.chars().last().unwrap()
             })
             .map(|(_, p)| p.clone())
             .collect::<Vec<(Notation, Pronunciation)>>();
 
-        let notation = blocks_vec
+        let notation = syllables_vec
             .iter()
             .map(|p| p.0.clone())
             .collect::<Vec<Notation>>()
             .join("");
-        let pronunciation = blocks_vec
+        let pronunciation = syllables_vec
             .iter()
             .map(|p| p.1.clone())
             .collect::<Vec<Pronunciation>>()
