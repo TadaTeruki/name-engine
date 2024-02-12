@@ -42,7 +42,7 @@ fn main() {
         .bulk_add_place_names(place_names)
         .build();
     let mut rng: StdRng = SeedableRng::seed_from_u64(0);
-    (0..10000).for_each(|_| {
+    (0..100).for_each(|_| {
         let name = generator.generate(|| rng.gen());
         println!("{} {}", format(name.0), format(name.1));
     });
