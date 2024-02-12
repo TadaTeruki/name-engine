@@ -5,14 +5,21 @@
  */
 
 use std::collections::HashMap;
+use thiserror::Error;
 
 use sorted_vec::{SortedVec, SortedVecBuilder};
 
-type Notation = String;
-type Pronunciation = String;
+type Script = String;
+type Content = String;
 type ToRestore = bool;
 
 mod sorted_vec;
+
+#[derive(Error, Debug)]
+pub enum PlaceNameError {
+    #[error("empty string detected")]
+    EmptyString,
+}
 
 struct PhoneticConnectionBuilder {
     conn: HashMap<char, HashMap<char, usize>>,
@@ -80,17 +87,37 @@ impl PhoneticConnection {
 
 #[derive(Debug)]
 pub struct PlaceName {
-    pub syllables: Vec<(Notation, Pronunciation)>,
+    pub syllables: Vec<(Content, Script)>,
 }
 
 impl PlaceName {
-    pub fn new(syllables: Vec<(&str, &str)>) -> Self {
-        Self {
-            syllables: syllables
+    pub fn new(syllables: Vec<(&str, &str)>) -> Result<Self, PlaceNameError> {
+        Self::from_string(
+            syllables
                 .iter()
                 .map(|(k, r)| (k.to_string(), r.to_string()))
                 .collect(),
+        )
+    }
+
+    pub fn from_string(syllables: Vec<(String, String)>) -> Result<Self, PlaceNameError> {
+        for syllable in &syllables {
+            if syllable.1.is_empty() {
+                return Err(PlaceNameError::EmptyString);
+            }
         }
+        Ok(Self { syllables })
+    }
+
+    pub fn connection_pairs(&self) -> Vec<(char, char)> {
+        let mut pairs = vec![];
+        for i in 0..self.syllables.len() - 1 {
+            pairs.push((
+                self.syllables[i].1.chars().last().unwrap(),
+                self.syllables[i + 1].1.chars().next().unwrap(),
+            ))
+        }
+        pairs
     }
 }
 
@@ -127,31 +154,26 @@ impl PlaceNameGeneratorBuilder {
         let mut incoming_syllables = vec![];
         let mut outgoing_syllables = vec![];
         self.place_names.iter().for_each(|place_name| {
-            for i in 0..place_name.syllables.len() - 1 {
-                let (incoming_char, outgoing_char) = (
-                    place_name.syllables[i].1.chars().last(),
-                    place_name.syllables[i + 1].1.chars().next(),
-                );
-                if incoming_char.is_none() || outgoing_char.is_none() {
-                    continue;
-                }
-                let (incoming_char, outgoing_char) =
-                    (incoming_char.unwrap(), outgoing_char.unwrap());
-                conn_builder.add_char_pair(incoming_char, outgoing_char);
-                if i == 0 {
-                    incoming_syllables.push(place_name.syllables[i].clone());
-                }
-                let to_restore = i + 1 != place_name.syllables.len() - 1;
-                outgoing_syllables.push((
-                    place_name.syllables[i + 1].0.clone(),
-                    place_name.syllables[i + 1].1.clone(),
-                    to_restore,
-                ));
-                outgoing_tree
-                    .entry(outgoing_char)
-                    .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
-                    .or_insert(vec![outgoing_syllables.len() - 1]);
-            }
+            place_name
+                .connection_pairs()
+                .iter()
+                .enumerate()
+                .for_each(|(i, pair)| {
+                    conn_builder.add_char_pair(pair.0, pair.1);
+                    if i == 0 {
+                        incoming_syllables.push(place_name.syllables[i].clone());
+                    }
+                    let to_restore = i + 1 != place_name.syllables.len() - 1;
+                    outgoing_syllables.push((
+                        place_name.syllables[i + 1].0.clone(),
+                        place_name.syllables[i + 1].1.clone(),
+                        to_restore,
+                    ));
+                    outgoing_tree
+                        .entry(pair.1)
+                        .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
+                        .or_insert(vec![outgoing_syllables.len() - 1]);
+                });
         });
 
         PlaceNameGenerator {
@@ -165,9 +187,9 @@ impl PlaceNameGeneratorBuilder {
 
 pub struct PlaceNameGenerator {
     // syllables that can be the first syllable
-    incoming_syllables: Vec<(Notation, Pronunciation)>,
+    incoming_syllables: Vec<(Content, Script)>,
     // syllables that can be the next syllable
-    outgoing_syllables: Vec<(Notation, Pronunciation, ToRestore)>,
+    outgoing_syllables: Vec<(Content, Script, ToRestore)>,
     // list of the index of the outgoing_syllables which has the same first character
     outgoing_tree: HashMap<char, Vec<usize>>,
     // phonetic connection between the last character of the previous syllable and the first character of the next syllable
@@ -175,8 +197,8 @@ pub struct PlaceNameGenerator {
 }
 
 impl PlaceNameGenerator {
-    pub fn generate(&self, mut rand_fn: impl FnMut() -> f64) -> (Notation, Pronunciation) {
-        let query_next = |incoming_syllable: (Notation, Pronunciation), p0: f64, p1: f64| {
+    pub fn generate(&self, mut rand_fn: impl FnMut() -> f64) -> (Content, Script) {
+        let query_next = |incoming_syllable: (Content, Script), p0: f64, p1: f64| {
             let connection_syllable = self
                 .conn
                 .extract_forward(incoming_syllable.1.chars().last().unwrap(), p0);
@@ -218,19 +240,19 @@ impl PlaceNameGenerator {
                         != syllables_vec[*i].1.chars().last().unwrap()
             })
             .map(|(_, p)| p.clone())
-            .collect::<Vec<(Notation, Pronunciation)>>();
+            .collect::<Vec<(Content, Script)>>();
 
-        let notation = syllables_vec
+        let content = syllables_vec
             .iter()
             .map(|p| p.0.clone())
-            .collect::<Vec<Notation>>()
+            .collect::<Vec<Content>>()
             .join("");
-        let pronunciation = syllables_vec
+        let script = syllables_vec
             .iter()
             .map(|p| p.1.clone())
-            .collect::<Vec<Pronunciation>>()
+            .collect::<Vec<Script>>()
             .join("");
 
-        (notation, pronunciation)
+        (content, script)
     }
 }

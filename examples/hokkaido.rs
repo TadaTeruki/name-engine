@@ -12,7 +12,7 @@ fn main() {
 
     let place_names = csv_file
         .lines()
-        .map(|line| {
+        .filter_map(|line| {
             let split = line.split(',');
             let phrases = split
                 .last()
@@ -23,7 +23,11 @@ fn main() {
                     (split.next().unwrap(), split.next().unwrap())
                 })
                 .collect::<Vec<(&str, &str)>>();
-            PlaceName::new(phrases)
+            if let Ok(placename) = PlaceName::new(phrases) {
+                Some(placename)
+            } else {
+                None
+            }
         })
         .collect::<Vec<PlaceName>>();
 
