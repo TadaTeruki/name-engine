@@ -169,13 +169,7 @@ fn main() {
         vec![("宮", "miya"), ("崎", "zaki")],
     ]
     .iter()
-    .filter_map(|placename| {
-        if let Ok(placename) = PlaceName::new(placename.to_vec()) {
-            Some(placename)
-        } else {
-            None
-        }
-    })
+    .map(|placename| PlaceName::new(placename.to_vec()).unwrap())
     .collect::<Vec<PlaceName>>();
 
     let generator = PlaceNameGeneratorBuilder::new()

@@ -29,6 +29,24 @@ fn evaluate(
     if first_syllable_place_name == *name {
         return None;
     }
+    // check if the dulicate syllables are in the name, like 'Woodwood'
+    let mut has_duplicate_syllables = false;
+    syllable_info.iter().enumerate().for_each(|(i, _)| {
+        if i == 0 {
+            return;
+        }
+        let place_name_current = &place_names[syllable_info[i].place_name_index].syllables()
+            [syllable_info[i].syllable_index];
+        let place_name_previous = &place_names[syllable_info[i - 1].place_name_index].syllables()
+            [syllable_info[i - 1].syllable_index];
+
+        if place_name_current.0.to_uppercase() == place_name_previous.0.to_uppercase() {
+            has_duplicate_syllables = true;
+        }
+    });
+    if has_duplicate_syllables {
+        return None;
+    }
 
     // split syllables by '+'
     let syllables_splitted = syllable_info
