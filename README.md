@@ -1,10 +1,12 @@
-# placename-engine
+# name-engine
 
-`placename-engine` is a basic library for computing Markov chains to generate place names based on their pronunciation.
+`name-engine` is a basic library for computing Markov chains to generate names based on their pronunciation.
+
+This can be used for various purposes, but primarily for generating place names.
 
 ## Algorithm
 
-This library computes Markov chains from a dataset of separated place names. The place names are usually separated by their syllables, and each of them is treated as a state of the Markov chain.
+This library computes Markov chains from a dataset of names. The names must be separated by certain user-defined rules, such as syllables. Each of the separated units is treated as a state of the Markov chain.
 
 The transition is defined as the link between the pronunciations. For example: 
 
@@ -20,16 +22,16 @@ The probability of the transition is calculated from the frequency of the compou
 
 ## Features
 This library does:
-- **Create place name generator** from dataset of separated place names.
-- Generate place names using Markov chains.
+- **Create name generator** from dataset of separated names.
+- Generate names using Markov chains.
 
 This library DOES NOT:
 - Read and parse data from a file.
-- **Automatically separate original place names according to specific rules, such as syllables.** You must prepare the dataset yourself.
-- **Evaluate place names.** If you want to generate better names, you must implement the evaluation function and filtering process by yourself.
-- **Combine another parameters.** If you want to do, `PlaceNameGenerator::generate_verbose` is useful.
+- **Automatically separate original names according to specific rules, such as syllables.** You must prepare the dataset yourself.
+- **Evaluate names.** If you want to generate better names, you must implement the evaluation function and filtering process by yourself.
+- **Combine another parameters.** If you want to do, `NameGenerator::generate_verbose` is useful.
 
-This library does only the minimum processing necessary to generate place names. You must implement the necessary processing externally, as described above.
+This library only does the minimal processing necessary to generate names. To create a more practical name generator, some additional processing like above will be required.
 
 ## Documentation
 
@@ -89,9 +91,9 @@ Kinbridge Falls /ˈkɪnbrɪdʒ fɔːlz/
 
 ### About the English and US place name data for the examples
 
-For English and US place name data, some symbols are added for better separation. 
+For English and US place name data, some symbols are added for better results.
 - [1] Spaces are replaced by `+` and treated as independent syllables.
-- [2] For the syllable with capital letter, an asterisk `*` is added at the beginning of the pronunciation to become the first syllable of the place name or the next syllable of `+`.
+- [2] For the syllable with capital letter, an asterisk `*` is added at the beginning of the pronunciation to become the first syllable of the name or the next syllable of `+`.
 - [3] For the pronunciation of the previous syllable of `+`, an asterisk `*` is added at the end of the pronunciation to become the previous syllable of `+`.
 
 **Example**

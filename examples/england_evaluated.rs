@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use placename_engine::{PlaceName, PlaceNameGeneratorBuilder, SyllableInfo};
+use name_engine::{Name, NameGeneratorBuilder, SyllableInfo};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn format(name: &String) -> String {
@@ -19,13 +19,13 @@ fn normal_distribution(x: f64, mean: f64, std_dev: f64) -> f64 {
 }
 
 fn evaluate(
-    place_names: &Vec<PlaceName>,
+    place_names: &Vec<Name>,
     name: &String,
     _: &String,
     syllable_info: &Vec<SyllableInfo>,
 ) -> Option<f64> {
     // check if the same name is in the place_names
-    let first_syllable_place_name = place_names[syllable_info[0].place_name_index].content();
+    let first_syllable_place_name = place_names[syllable_info[0].name_index].content();
     if first_syllable_place_name == *name {
         return None;
     }
@@ -35,9 +35,9 @@ fn evaluate(
         if i == 0 {
             return;
         }
-        let place_name_current = &place_names[syllable_info[i].place_name_index].syllables()
-            [syllable_info[i].syllable_index];
-        let place_name_previous = &place_names[syllable_info[i - 1].place_name_index].syllables()
+        let place_name_current =
+            &place_names[syllable_info[i].name_index].syllables()[syllable_info[i].syllable_index];
+        let place_name_previous = &place_names[syllable_info[i - 1].name_index].syllables()
             [syllable_info[i - 1].syllable_index];
 
         if place_name_current.0.to_uppercase() == place_name_previous.0.to_uppercase() {
@@ -52,7 +52,7 @@ fn evaluate(
     let syllables_splitted = syllable_info
         .iter()
         .fold(vec![vec![]], |mut acc, syllable_info| {
-            let place_name = &place_names[syllable_info.place_name_index];
+            let place_name = &place_names[syllable_info.name_index];
             let syllable = &place_name.syllables()[syllable_info.syllable_index];
             if syllable.0 == "+" {
                 acc.push(vec![]);
@@ -89,16 +89,16 @@ fn main() {
                     (name, pronunciation)
                 })
                 .collect::<Vec<(&str, &str)>>();
-            if let Ok(placename) = PlaceName::new(phrases) {
-                Some(placename)
+            if let Ok(name) = Name::new(phrases) {
+                Some(name)
             } else {
                 None
             }
         })
-        .collect::<Vec<PlaceName>>();
+        .collect::<Vec<Name>>();
 
-    let generator = PlaceNameGeneratorBuilder::new()
-        .bulk_add_place_names(place_names)
+    let generator = NameGeneratorBuilder::new()
+        .bulk_add_names(place_names)
         .build();
 
     let mut rng: StdRng = SeedableRng::seed_from_u64(0);
@@ -106,12 +106,7 @@ fn main() {
         let evaluated = (0..3)
             .filter_map(|_| {
                 let (name, pronunciation, syllable_info) = generator.generate_verbose(|| rng.gen());
-                let score = evaluate(
-                    generator.place_names(),
-                    &name,
-                    &pronunciation,
-                    &syllable_info,
-                );
+                let score = evaluate(generator.names(), &name, &pronunciation, &syllable_info);
                 if let Some(score) = score {
                     Some((name, pronunciation, score))
                 } else {

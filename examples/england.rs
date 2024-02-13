@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use placename_engine::{PlaceName, PlaceNameGeneratorBuilder};
+use name_engine::{Name, NameGeneratorBuilder};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn format(name: String) -> String {
@@ -30,16 +30,16 @@ fn main() {
                     (name, pronunciation)
                 })
                 .collect::<Vec<(&str, &str)>>();
-            if let Ok(placename) = PlaceName::new(phrases) {
-                Some(placename)
+            if let Ok(name) = Name::new(phrases) {
+                Some(name)
             } else {
                 None
             }
         })
-        .collect::<Vec<PlaceName>>();
+        .collect::<Vec<Name>>();
 
-    let generator = PlaceNameGeneratorBuilder::new()
-        .bulk_add_place_names(place_names)
+    let generator = NameGeneratorBuilder::new()
+        .bulk_add_names(place_names)
         .build();
     let mut rng: StdRng = SeedableRng::seed_from_u64(0);
     (0..100).for_each(|_| {

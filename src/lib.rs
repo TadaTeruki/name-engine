@@ -19,7 +19,7 @@ type ToRestore = bool;
 mod sorted_vec;
 
 #[derive(Error, Debug)]
-pub enum PlaceNameError {
+pub enum NameError {
     #[error("empty string detected")]
     EmptyString,
 }
@@ -88,17 +88,17 @@ impl PhoneticConnection {
     }
 }
 
-/// The struct that represents the place name.
-/// Place names are composed of syllables, and each syllable has a letter as `Letter`, and a phonetic representation as `Phonics`.
+/// The struct that represents the name.
+///  names are composed of syllables, and each syllable has a letter as `Letter`, and a phonetic representation as `Phonics`.
 ///
-/// Example: Bedford -> PlaceName::new(vec![("bed", "ˈbɛd"), ("ford", "fərd")])
+/// Example: Bedford -> Name::new(vec![("bed", "ˈbɛd"), ("ford", "fərd")])
 #[derive(Debug)]
-pub struct PlaceName {
+pub struct Name {
     syllables: Vec<(Letter, Phonics)>,
 }
 
-impl PlaceName {
-    pub fn new(syllables: Vec<(&str, &str)>) -> Result<Self, PlaceNameError> {
+impl Name {
+    pub fn new(syllables: Vec<(&str, &str)>) -> Result<Self, NameError> {
         Self::from_string(
             syllables
                 .iter()
@@ -107,10 +107,10 @@ impl PlaceName {
         )
     }
 
-    pub fn from_string(syllables: Vec<(String, String)>) -> Result<Self, PlaceNameError> {
+    pub fn from_string(syllables: Vec<(String, String)>) -> Result<Self, NameError> {
         for syllable in &syllables {
             if syllable.1.is_empty() {
-                return Err(PlaceNameError::EmptyString);
+                return Err(NameError::EmptyString);
             }
         }
         Ok(Self { syllables })
@@ -144,63 +144,57 @@ impl PlaceName {
     }
 }
 
-/// The builder for the PlaceNameGenerator.
-pub struct PlaceNameGeneratorBuilder {
-    place_names: Vec<PlaceName>,
+/// The builder for the NameGenerator.
+pub struct NameGeneratorBuilder {
+    names: Vec<Name>,
 }
 
-impl Default for PlaceNameGeneratorBuilder {
+impl Default for NameGeneratorBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl PlaceNameGeneratorBuilder {
+impl NameGeneratorBuilder {
     pub fn new() -> Self {
-        Self {
-            place_names: vec![],
-        }
+        Self { names: vec![] }
     }
 
-    pub fn add_place_name(mut self, place_name: PlaceName) -> Self {
-        self.place_names.push(place_name);
+    pub fn add_name(mut self, name: Name) -> Self {
+        self.names.push(name);
         self
     }
 
-    pub fn bulk_add_place_names(mut self, place_names: Vec<PlaceName>) -> Self {
-        self.place_names.extend(place_names);
+    pub fn bulk_add_names(mut self, names: Vec<Name>) -> Self {
+        self.names.extend(names);
         self
     }
 
-    pub fn build(self) -> PlaceNameGenerator {
+    pub fn build(self) -> NameGenerator {
         let mut conn_builder = PhoneticConnectionBuilder::new();
         let mut outgoing_tree = HashMap::new();
         let mut incoming_syllables = vec![];
         let mut outgoing_syllables = vec![];
-        self.place_names
-            .iter()
-            .enumerate()
-            .for_each(|(ipn, place_name)| {
-                place_name
-                    .connection_pairs()
-                    .iter()
-                    .enumerate()
-                    .for_each(|(ipc, pair)| {
-                        conn_builder.add_char_pair(pair.0, pair.1);
-                        if ipc == 0 {
-                            incoming_syllables.push((ipn, ipc));
-                        }
-                        let to_restore = ipc + 1 != place_name.syllables.len() - 1;
-                        outgoing_syllables.push((ipn, ipc + 1, to_restore));
-                        outgoing_tree
-                            .entry(pair.1)
-                            .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
-                            .or_insert(vec![outgoing_syllables.len() - 1]);
-                    });
-            });
+        self.names.iter().enumerate().for_each(|(ipn, name)| {
+            name.connection_pairs()
+                .iter()
+                .enumerate()
+                .for_each(|(ipc, pair)| {
+                    conn_builder.add_char_pair(pair.0, pair.1);
+                    if ipc == 0 {
+                        incoming_syllables.push((ipn, ipc));
+                    }
+                    let to_restore = ipc + 1 != name.syllables.len() - 1;
+                    outgoing_syllables.push((ipn, ipc + 1, to_restore));
+                    outgoing_tree
+                        .entry(pair.1)
+                        .and_modify(|v: &mut Vec<usize>| v.push(outgoing_syllables.len() - 1))
+                        .or_insert(vec![outgoing_syllables.len() - 1]);
+                });
+        });
 
-        PlaceNameGenerator {
-            place_names: self.place_names,
+        NameGenerator {
+            names: self.names,
             incoming_syllables,
             outgoing_syllables,
             outgoing_tree,
@@ -209,10 +203,10 @@ impl PlaceNameGeneratorBuilder {
     }
 }
 
-/// The generator for the place names.
-pub struct PlaceNameGenerator {
-    // list of the place names
-    place_names: Vec<PlaceName>,
+/// The generator for the names.
+pub struct NameGenerator {
+    // list of the names
+    names: Vec<Name>,
     // syllables that can be the first syllable
     incoming_syllables: Vec<(usize, usize)>,
     // syllables that can be the next syllable
@@ -226,14 +220,14 @@ pub struct PlaceNameGenerator {
 /// The detailed information of the syllables.
 #[derive(Debug)]
 pub struct SyllableInfo {
-    /// The index of the place name in the dataset
-    pub place_name_index: usize,
-    /// The index of the syllable in the place name
+    /// The index of the name in the dataset
+    pub name_index: usize,
+    /// The index of the syllable in the name
     pub syllable_index: usize,
 }
 
-impl PlaceNameGenerator {
-    /// Generate a place name with detailed information of the syllables.
+impl NameGenerator {
+    /// Generate a name with detailed information of the syllables.
     /// Random number generator is required as argument `rand_fn`.
     pub fn generate_verbose(
         &self,
@@ -241,7 +235,7 @@ impl PlaceNameGenerator {
     ) -> (Letter, Phonics, Vec<SyllableInfo>) {
         let query_next = |incoming_syllable: (usize, usize), p0: f64, p1: f64| {
             let connection_syllable = self.conn.extract_forward(
-                self.place_names[incoming_syllable.0].last_char_of_syllable(incoming_syllable.1),
+                self.names[incoming_syllable.0].last_char_of_syllable(incoming_syllable.1),
                 p0,
             );
             let outgoing_syllable_list = &self.outgoing_tree[&connection_syllable];
@@ -264,34 +258,34 @@ impl PlaceNameGenerator {
         let syllable_info = syllables_vec
             .iter()
             .map(|p| SyllableInfo {
-                place_name_index: p.0,
+                name_index: p.0,
                 syllable_index: p.1,
             })
             .collect::<Vec<SyllableInfo>>();
 
         let content = syllables_vec
             .iter()
-            .map(|p| self.place_names[p.0].syllables[p.1].0.clone())
+            .map(|p| self.names[p.0].syllables[p.1].0.clone())
             .collect::<Vec<Letter>>()
             .join("");
         let script = syllables_vec
             .iter()
-            .map(|p| self.place_names[p.0].syllables[p.1].1.clone())
+            .map(|p| self.names[p.0].syllables[p.1].1.clone())
             .collect::<Vec<Phonics>>()
             .join("");
 
         (content, script, syllable_info)
     }
 
-    /// Generate a place name.
+    /// Generate a name.
     /// Random number generator is required as argument `rand_fn`.
     pub fn generate(&self, rand_fn: impl FnMut() -> f64) -> (Letter, Phonics) {
         let (content, script, _) = self.generate_verbose(rand_fn);
         (content, script)
     }
 
-    /// Get the list of the place names as reference
-    pub fn place_names(&self) -> &Vec<PlaceName> {
-        &self.place_names
+    /// Get the list of the names as reference
+    pub fn names(&self) -> &Vec<Name> {
+        &self.names
     }
 }
