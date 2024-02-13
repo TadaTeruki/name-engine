@@ -8,7 +8,7 @@ This can be used for various purposes, but primarily for generating place names.
 
 This library computes Markov chains from a dataset of names. The names must be separated by certain user-defined rules, such as syllables. Each of the separated units is treated as a state of the Markov chain.
 
-The transition is defined as the link between the pronunciations. For example: 
+The transition is defined as the connection between the pronunciations. For example: 
 
 - `ŋ` -> `w` in `Ringwood /ˈrɪŋwʊd/` [`(Ring /ˈrɪŋ/)` `(wood /wʊd/)`]
 
