@@ -65,7 +65,7 @@ Thatchingworth /ˈθætʃɪŋwɜːθ/
 Brentgomley /ˈbrɛntɡʌmli/
 ```
 
-#### Generate 100 place names of England (extracted better ones from 3)
+#### Generate 100 place names of England (extracted better ones)
 
 ```sh
 $ cargo run --example england_evaluated
@@ -77,7 +77,7 @@ Downbury /ˈdaʊnbəri/
 Farhead /ˈfɑːrhɛd/
 ```
 
-#### Generate 100 place names of US (extracted better ones from 3)
+#### Generate 100 place names of US (extracted better ones)
 
 ```sh
 $ cargo run --example us_evaluated
