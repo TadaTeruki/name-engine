@@ -85,8 +85,8 @@ fn main() {
                 .map(|phrase| {
                     let mut split = phrase.split('_');
                     let name = split.next().unwrap();
-                    let pronounciation = split.next().unwrap();
-                    (name, pronounciation)
+                    let pronunciation = split.next().unwrap();
+                    (name, pronunciation)
                 })
                 .collect::<Vec<(&str, &str)>>();
             if let Ok(placename) = PlaceName::new(phrases) {
@@ -105,24 +105,23 @@ fn main() {
     (0..100).for_each(|_| {
         let evaluated = (0..3)
             .filter_map(|_| {
-                let (name, pronounciation, syllable_info) =
-                    generator.generate_verbose(|| rng.gen());
+                let (name, pronunciation, syllable_info) = generator.generate_verbose(|| rng.gen());
                 let score = evaluate(
                     generator.place_names(),
                     &name,
-                    &pronounciation,
+                    &pronunciation,
                     &syllable_info,
                 );
                 if let Some(score) = score {
-                    Some((name, pronounciation, score))
+                    Some((name, pronunciation, score))
                 } else {
                     None
                 }
             })
             .max_by(|(_, _, score1), (_, _, score2)| score1.partial_cmp(score2).unwrap());
 
-        if let Some((name, pronounciation, _)) = evaluated {
-            println!("{} /{}/", format(&name), format(&pronounciation));
+        if let Some((name, pronunciation, _)) = evaluated {
+            println!("{} /{}/", format(&name), format(&pronunciation));
         }
     });
 }
