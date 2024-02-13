@@ -99,10 +99,10 @@ For English and US place name data, some symbols are added for better separation
 Tunbridge Wells /ˈtʌnbrɪdʒ+ˈwɛlz/
 (Tun, /*ˈtʌn/) (bridge, /brɪdʒ*/) (+, /+/) (Wells, /*ˈwɛlz/)
 ```
-- `(Tun, /ˈtʌn/)` -> `(Tun, /*ˈtʌn/)` [2]
-- `(bridge, /brɪdʒ/)` -> `(bridge, /brɪdʒ*/)` [2]
-- `(+, /+/)` [1]
-- `(Wells, /ˈwɛlz/)` -> `(+, /+/)` -> `(Wells, /*ˈwɛlz/)` [3]
+- `(Tun /ˈtʌn/)` -> `(Tun /*ˈtʌn/)` [2]
+- `(bridge /brɪdʒ/)` -> `(bridge /brɪdʒ*/)` [3]
+- `(+ /+/)` [1]
+- `(Wells /ˈwɛlz/)` -> `(Wells /*ˈwɛlz/)` [2]
 
 Moreover, some suffexes are treated as independent syllables, such as `minster` and `bridge`.
 
