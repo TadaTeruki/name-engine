@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use placename_engine::{PlaceName, PlaceNameGeneratorBuilder, SyllableInfo};
+use placename_engine::{PlaceName, PlaceNameGenerator, PlaceNameGeneratorBuilder, SyllableInfo};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn format(name: &String) -> String {
@@ -45,7 +45,7 @@ fn evaluate(
         });
 
     let max_syllable_count = syllables_splitted.iter().map(|s| s.len()).max().unwrap();
-    let score_for_syllable_count = normal_distribution(max_syllable_count as f64, 2.25, 0.8);
+    let score_for_syllable_count = normal_distribution(max_syllable_count as f64, 2.25, 2.0);
 
     let block_count = syllables_splitted.len();
     let score_for_block_count = normal_distribution(block_count as f64, 1.5, 1.0);
@@ -53,9 +53,7 @@ fn evaluate(
     Some(score_for_syllable_count * score_for_block_count)
 }
 
-fn main() {
-    let csv_file = include_str!("assets/england.csv");
-
+fn create_place_name_generator(csv_file: &str) -> PlaceNameGenerator {
     let place_names = csv_file
         .lines()
         .filter_map(|line| {
@@ -83,8 +81,23 @@ fn main() {
         .bulk_add_place_names(place_names)
         .build();
 
+    generator
+}
+
+fn main() {
+    let us_csv_file = include_str!("assets/us.csv");
+    let california_csv_file = include_str!("assets/california.csv");
+
+    let us_generator = create_place_name_generator(us_csv_file);
+    let california_generator = create_place_name_generator(california_csv_file);
+
     let mut rng: StdRng = SeedableRng::seed_from_u64(0);
     (0..100).for_each(|_| {
+        let generator = if rng.gen::<f64>() < 0.7 {
+            &us_generator
+        } else {
+            &california_generator
+        };
         let evaluated = (0..3)
             .filter_map(|_| {
                 let (name, pronounciation, syllable_info) =
