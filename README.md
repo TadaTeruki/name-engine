@@ -18,7 +18,7 @@ The transition is defined as the link between the pronunciations. For example:
 
 With the data adove, the model can generate `Berkles` from `(Berk /ˈbɜːrk/)` and `(les /əlz/)` by tracking the transition `k` -> `ə`.
 
-The probability of the transition is calculated from the frequency of the compound in the dataset.
+The probability of the transition is calculated from the frequency of the connection in the dataset.
 
 ## Features
 This library does:
