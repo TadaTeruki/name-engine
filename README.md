@@ -4,7 +4,7 @@
 
 ## Algorithm
 
-This library computes Markov chains from a data set of separated place names. The place names are usually separated by their syllables, and each of them is treated as a state of the Markov chain.
+This library computes Markov chains from a dataset of separated place names. The place names are usually separated by their syllables, and each of them is treated as a state of the Markov chain.
 
 The transition is defined as the link between the pronunciations. For example: 
 
@@ -16,15 +16,14 @@ The transition is defined as the link between the pronunciations. For example:
 
 With the data adove, the model can generate `Berkles` from `(Berk /ˈbɜːrk/)` and `(les /əlz/)` by tracking the transition `k` -> `ə`.
 
-The probability of the transition is calculated from the frequency of the compound in the data set.
+The probability of the transition is calculated from the frequency of the compound in the dataset.
 
 ## Features
 This library does:
 - **Create place name generator** from dataset of separated place names.
 - Generate place names using Markov chains.
 
-
-This library does not:
+This library DOES NOT:
 - Read and parse data from a file.
 - **Automatically separate original place names according to specific rules, such as syllables.** You must prepare the dataset yourself.
 - **Evaluate place names.** If you want to generate better names, you must implement the evaluation function and filtering process by yourself.
