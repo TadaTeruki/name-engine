@@ -98,7 +98,7 @@ For English and US place name data, some symbols are added for better results.
 
 **Example**
 ```
-Tunbridge Wells /ˈtʌnbrɪdʒ+ˈwɛlz/
+Tunbridge Wells /ˈtʌnbrɪdʒ ˈwɛlz/
 (Tun, /*ˈtʌn/) (bridge, /brɪdʒ*/) (+, /+/) (Wells, /*ˈwɛlz/)
 ```
 - `(Tun /ˈtʌn/)` -> `(Tun /*ˈtʌn/)` [2]
