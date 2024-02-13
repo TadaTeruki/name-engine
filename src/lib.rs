@@ -9,8 +9,11 @@ use thiserror::Error;
 
 use sorted_vec::{SortedVec, SortedVecBuilder};
 
-type Script = String;
-type Content = String;
+/// The letter of the syllable
+type Letter = String;
+/// The phonetic representation of the letter
+type Phonics = String;
+/// The parameter of syllables that can be the next syllable or not
 type ToRestore = bool;
 
 mod sorted_vec;
@@ -85,9 +88,13 @@ impl PhoneticConnection {
     }
 }
 
+/// The struct that represents the place name.
+/// Place names are composed of syllables, and each syllable has a letter as `Letter`, and a phonetic representation as `Phonics`.
+///
+/// Example: Bedford -> PlaceName::new(vec![("bed", "ˈbɛd"), ("ford", "fərd")])
 #[derive(Debug)]
 pub struct PlaceName {
-    syllables: Vec<(Content, Script)>,
+    syllables: Vec<(Letter, Phonics)>,
 }
 
 impl PlaceName {
@@ -124,19 +131,20 @@ impl PlaceName {
         self.syllables[i].1.chars().last().unwrap()
     }
 
-    pub fn content(&self) -> Content {
+    pub fn content(&self) -> Letter {
         self.syllables.iter().map(|p| p.0.clone()).collect()
     }
 
-    pub fn script(&self) -> Script {
+    pub fn script(&self) -> Phonics {
         self.syllables.iter().map(|p| p.1.clone()).collect()
     }
 
-    pub fn syllables(&self) -> &Vec<(Content, Script)> {
+    pub fn syllables(&self) -> &Vec<(Letter, Phonics)> {
         &self.syllables
     }
 }
 
+/// The builder for the PlaceNameGenerator.
 pub struct PlaceNameGeneratorBuilder {
     place_names: Vec<PlaceName>,
 }
@@ -201,7 +209,9 @@ impl PlaceNameGeneratorBuilder {
     }
 }
 
+/// The generator for the place names.
 pub struct PlaceNameGenerator {
+    // list of the place names
     place_names: Vec<PlaceName>,
     // syllables that can be the first syllable
     incoming_syllables: Vec<(usize, usize)>,
@@ -213,17 +223,22 @@ pub struct PlaceNameGenerator {
     conn: PhoneticConnection,
 }
 
+/// The detailed information of the syllables.
 #[derive(Debug)]
 pub struct SyllableInfo {
+    /// The index of the place name in the dataset
     pub place_name_index: usize,
+    /// The index of the syllable in the place name
     pub syllable_index: usize,
 }
 
 impl PlaceNameGenerator {
+    /// Generate a place name with detailed information of the syllables.
+    /// Random number generator is required as argument `rand_fn`.
     pub fn generate_verbose(
         &self,
         mut rand_fn: impl FnMut() -> f64,
-    ) -> (Content, Script, Vec<SyllableInfo>) {
+    ) -> (Letter, Phonics, Vec<SyllableInfo>) {
         let query_next = |incoming_syllable: (usize, usize), p0: f64, p1: f64| {
             let connection_syllable = self.conn.extract_forward(
                 self.place_names[incoming_syllable.0].last_char_of_syllable(incoming_syllable.1),
@@ -257,22 +272,25 @@ impl PlaceNameGenerator {
         let content = syllables_vec
             .iter()
             .map(|p| self.place_names[p.0].syllables[p.1].0.clone())
-            .collect::<Vec<Content>>()
+            .collect::<Vec<Letter>>()
             .join("");
         let script = syllables_vec
             .iter()
             .map(|p| self.place_names[p.0].syllables[p.1].1.clone())
-            .collect::<Vec<Script>>()
+            .collect::<Vec<Phonics>>()
             .join("");
 
         (content, script, syllable_info)
     }
 
-    pub fn generate(&self, rand_fn: impl FnMut() -> f64) -> (Content, Script) {
+    /// Generate a place name.
+    /// Random number generator is required as argument `rand_fn`.
+    pub fn generate(&self, rand_fn: impl FnMut() -> f64) -> (Letter, Phonics) {
         let (content, script, _) = self.generate_verbose(rand_fn);
         (content, script)
     }
 
+    /// Get the list of the place names as reference
     pub fn place_names(&self) -> &Vec<PlaceName> {
         &self.place_names
     }
