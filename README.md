@@ -1,5 +1,9 @@
 # name-engine
 
+*Preview: Generating English Place Names `examples/england_evaluated.rs`*
+
+![placename-generation](https://github.com/TadaTeruki/name-engine/assets/69315285/ce7b6b1c-a8ad-477a-9b10-92a27cb6df1c)
+
 `name-engine` is a basic library for computing Markov chains to generate names based on their pronunciation.
 
 This can be used for various purposes, but primarily for generating place names.
