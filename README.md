@@ -43,6 +43,13 @@ Run `cargo doc --open` to see the documentation.
 
 If you want to try it out, see the examples in `examples/`. For the first step, `examples/japanese.rs` is suitable for reading.
 
+## Installation
+
+```sh
+[dependencies]
+name-engine = "0.1.0"
+```
+
 ## Examples
 
 #### Generate 100 place names of Hokkaido
