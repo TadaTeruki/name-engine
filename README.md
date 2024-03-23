@@ -33,7 +33,7 @@ This library DOES NOT:
 - Read and parse data from a file.
 - **Automatically separate original names according to specific rules, such as syllables.** You must prepare the dataset yourself.
 - **Evaluate names.** If you want to generate better names, you must implement the evaluation function and filtering process by yourself.
-- **Combine another parameters.** If you want to do, `NameGenerator::generate_verbose` is useful.
+- **Combine another parameters.** If you want to do, `NameGenerator::generate_verbose` is useful to implement it by yourself.
 
 This library only does the minimal processing necessary to generate names. To create a more practical name generator, some additional processing like above will be required.
 
@@ -129,3 +129,5 @@ Source: https://www.pref.hokkaido.lg.jp/link/shichoson/aiueo.html
 ## License
 
 This project is licensed under the Mozilla Public License v2.0. See the [LICENSE](LICENSE) file for details.
+
+Note that if you use, copy or modify the code in `examples`, you do not need to worry about the copyleft restrictions. Feel free to use it!
